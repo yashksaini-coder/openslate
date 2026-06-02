@@ -36,8 +36,9 @@
   --editor-placeholder: #9ca3af;
   --editor-code-bg: #f6f8fa;
   --editor-inline-code-bg: #f3f4f6;
-  --editor-blockquote-border: #d1d5db;
-  --editor-blockquote-color: #6b7280;
+  --editor-blockquote-border: #3b82f6;
+  --editor-blockquote-color: #4b5563;
+  --editor-blockquote-bg: #f9fafb;
   --editor-hr-color: #e5e7eb;
   --editor-selection-bg: #dbeafe;
   --editor-tasklist-checkbox: #111827;
@@ -95,8 +96,9 @@
   --editor-placeholder: #5c5f66;
   --editor-code-bg: #25262b;
   --editor-inline-code-bg: #2c2e33;
-  --editor-blockquote-border: #5c5f66;
-  --editor-blockquote-color: #909296;
+  --editor-blockquote-border: #60a5fa;
+  --editor-blockquote-color: #c1c2c5;
+  --editor-blockquote-bg: #25262b;
   --editor-hr-color: #373a40;
   --editor-selection-bg: #1e3a5f;
   --editor-tasklist-checkbox: #60a5fa;
@@ -153,8 +155,9 @@
   --editor-placeholder: #a09080;
   --editor-code-bg: #f4ecd8;
   --editor-inline-code-bg: #f0e8d8;
-  --editor-blockquote-border: #d8cdb8;
-  --editor-blockquote-color: #7a6a5a;
+  --editor-blockquote-border: #b8860b;
+  --editor-blockquote-color: #6b5a4a;
+  --editor-blockquote-bg: #f4ecd8;
   --editor-hr-color: #d8cdb8;
   --editor-selection-bg: #e8dcc8;
   --editor-tasklist-checkbox: #8b6914;
@@ -211,8 +214,9 @@
   --editor-placeholder: #4c566a;
   --editor-code-bg: #3b4252;
   --editor-inline-code-bg: #434c5e;
-  --editor-blockquote-border: #4c566a;
-  --editor-blockquote-color: #81a1c1;
+  --editor-blockquote-border: #88c0d0;
+  --editor-blockquote-color: #d8dee9;
+  --editor-blockquote-bg: #3b4252;
   --editor-hr-color: #434c5e;
   --editor-selection-bg: #434c5e;
   --editor-tasklist-checkbox: #88c0d0;
@@ -269,8 +273,9 @@
   --editor-placeholder: #555555;
   --editor-code-bg: #2d2e27;
   --editor-inline-code-bg: #3e3d32;
-  --editor-blockquote-border: #555555;
-  --editor-blockquote-color: #75715e;
+  --editor-blockquote-border: #a6e22e;
+  --editor-blockquote-color: #f8f8f2;
+  --editor-blockquote-bg: #2d2e27;
   --editor-hr-color: #3e3d32;
   --editor-selection-bg: #49483e;
   --editor-tasklist-checkbox: #f92672;
@@ -327,8 +332,9 @@
   --editor-placeholder: #3b4261;
   --editor-code-bg: #1f2133;
   --editor-inline-code-bg: #24283b;
-  --editor-blockquote-border: #2f3a54;
-  --editor-blockquote-color: #565f89;
+  --editor-blockquote-border: #7aa2f7;
+  --editor-blockquote-color: #c0caf5;
+  --editor-blockquote-bg: #1f2133;
   --editor-hr-color: #2f3a54;
   --editor-selection-bg: #2f3a54;
   --editor-tasklist-checkbox: #7aa2f7;
@@ -559,10 +565,22 @@ body {
   }
 
   .editor-content blockquote {
-    border-left: 3px solid var(--editor-blockquote-border);
-    padding-left: 12px;
+    border-left: 4px solid var(--editor-blockquote-border);
+    background: var(--editor-blockquote-bg);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 1.25em 0;
     color: var(--editor-blockquote-color);
     font-style: italic;
+    line-height: 1.6;
+  }
+
+  .editor-content blockquote p {
+    margin: 0;
+  }
+
+  .editor-content blockquote p + p {
+    margin-top: 0.75em;
   }
 
   .editor-content hr {

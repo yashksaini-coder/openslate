@@ -8,6 +8,7 @@
   import Placeholder from "@tiptap/extension-placeholder";
   import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
   import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
+  import Highlight from "@tiptap/extension-highlight";
   import { Markdown } from "tiptap-markdown";
   import { createLowlight, common } from "lowlight";
   import { Editor } from "@tiptap/core";
@@ -53,6 +54,9 @@
         TableRow,
         TableCell,
         TableHeader,
+        Highlight.configure({
+          multicolor: true,
+        }),
         Markdown.configure({
           html: true,
           tightLists: true,

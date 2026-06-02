@@ -28,15 +28,19 @@ export function getTheme(): Theme {
   return current;
 }
 
+function applyTheme(t: Theme) {
+  current = t;
+  localStorage.setItem(STORAGE_KEY, t);
+  document.documentElement.setAttribute("data-theme", t);
+}
+
 export async function loadFromServer() {
   try {
     const res = await api("/api/preferences");
     if (res.ok) {
       const data = await res.json();
-      if (data.theme && themes.some((t) => t.id === data.theme)) {
-        current = data.theme as Theme;
-        localStorage.setItem(STORAGE_KEY, data.theme);
-        document.documentElement.setAttribute("data-theme", data.theme);
+      if (data.theme && themes.some((t: Theme) => t.id === data.theme)) {
+        applyTheme(data.theme as Theme);
       }
     }
   } catch {
@@ -45,9 +49,7 @@ export async function loadFromServer() {
 }
 
 export async function setTheme(t: Theme) {
-  current = t;
-  localStorage.setItem(STORAGE_KEY, t);
-  document.documentElement.setAttribute("data-theme", t);
+  applyTheme(t);
   try {
     await api("/api/preferences", {
       method: "PUT",

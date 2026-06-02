@@ -293,9 +293,9 @@
   </aside>
 
   <!-- Main area -->
-  <main class="flex-1 flex flex-col p-4" style="background: var(--bg-page);">
+  <main class="flex-1 flex flex-col min-h-0" style="background: var(--bg-page);">
     {#if selected || creating}
-      <div class="space-y-3 flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col min-h-0 p-4 gap-2">
         <input
           value={editTitle}
           oninput={(e) => { editTitle = (e.target as HTMLInputElement).value; markDirty(); }}

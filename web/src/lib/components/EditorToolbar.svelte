@@ -100,6 +100,12 @@
     class:is-active={editor.isActive("code")}
     title="Inline code"
   ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 20-8-8 8-8"/><path d="m14 4 8 8-8 8"/></svg></button>
+  <button
+    onclick={() => editor.chain().focus().toggleHighlight().run()}
+    class="toolbar-btn"
+    class:is-active={editor.isActive("highlight")}
+    title="Highlight"
+  ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-6 8h4l-3 6 9-8h-5z"/></svg></button>
 
   <span class="w-px h-5 mx-1" style="background: var(--border-color);"></span>
 
@@ -115,7 +121,7 @@
     class="toolbar-btn"
     class:is-active={editor.isActive("orderedList")}
     title="Ordered list"
-  ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><path d="M4 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v.5L5 9h1"/><path d="M5 13.5a.5.5 0 0 1 .5-.5h1.5"/><path d="M4 17h3"/><path d="M5.5 17v3"/></svg></button>
+  ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="11" y1="5" x2="21" y2="5"/><line x1="11" y1="12" x2="21" y2="12"/><line x1="11" y1="19" x2="21" y2="19"/><path d="M4 4h1v5"/><path d="M4 9h2"/><path d="M5 11v3l2-2"/><path d="M6.5 20H3.4c0-1 2.6-1.9 2.6-3.5a1.5 1.5 0 0 0-2.6-1"/></svg></button>
   <button
     onclick={() => editor.chain().focus().toggleTaskList().run()}
     class="toolbar-btn"
