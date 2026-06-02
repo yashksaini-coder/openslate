@@ -92,3 +92,7 @@ pub async fn auth_middleware(
 
     Ok(next.run(request).await)
 }
+
+pub async fn me() -> Json<serde_json::Value> {
+    Json(json!({ "authenticated": true }))
+}

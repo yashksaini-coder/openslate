@@ -28,13 +28,20 @@ async fn main() {
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers([axum::http::header::CONTENT_TYPE]);
 
-    // Public routes (no auth)
     let public = Router::new()
         .route("/api/health", get(health_check))
         .route("/api/auth/login", axum::routing::post(auth::login))
         .route("/api/auth/logout", axum::routing::post(auth::logout));
 
-    let app = Router::new().merge(public).layer(cors).with_state(state);
+    let protected = Router::new()
+        .route("/api/auth/me", get(auth::me))
+        .route_layer(middleware::from_fn(auth::auth_middleware));
+
+    let app = Router::new()
+        .merge(public)
+        .merge(protected)
+        .layer(cors)
+        .with_state(state);
 
     let addr = format!("{}:{}", config.host, config.port);
     println!("Server running on http://{}", addr);
