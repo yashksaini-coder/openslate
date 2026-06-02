@@ -1,7 +1,9 @@
 mod auth;
 mod config;
 mod db;
+mod notes;
 
+use axum::extract::FromRef;
 use axum::http::Method;
 use axum::{Router, middleware, routing::get};
 use tower_http::cors::AllowOrigin;
@@ -9,6 +11,12 @@ use tower_http::cors::AllowOrigin;
 #[derive(Clone)]
 struct AppState {
     db: sqlx::SqlitePool,
+}
+
+impl FromRef<AppState> for sqlx::SqlitePool {
+    fn from_ref(state: &AppState) -> Self {
+        state.db.clone()
+    }
 }
 
 #[tokio::main]
@@ -35,6 +43,16 @@ async fn main() {
 
     let protected = Router::new()
         .route("/api/auth/me", get(auth::me))
+        .route(
+            "/api/notes",
+            get(notes::list_notes).post(notes::create_note),
+        )
+        .route(
+            "/api/notes/{slug}",
+            get(notes::get_note)
+                .put(notes::update_note)
+                .delete(notes::delete_note),
+        )
         .route_layer(middleware::from_fn(auth::auth_middleware));
 
     let app = Router::new()
