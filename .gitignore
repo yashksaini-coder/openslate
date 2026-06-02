@@ -1,0 +1,16 @@
+# Rust
+api/target/
+
+# SvelteKit
+web/.svelte-kit/
+web/build/
+web/node_modules/
+
+# SQLite
+*.db
+
+# Env
+.env
+
+# OS
+.DS_Store
