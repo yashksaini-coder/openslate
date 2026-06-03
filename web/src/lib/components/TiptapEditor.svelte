@@ -181,25 +181,13 @@
 
 <div class="tiptap-editor flex flex-col flex-1 border rounded overflow-hidden bg-editor" style="border-color: var(--border-color);">
   {#if editor}
-    <EditorToolbar {editor} />
+    <EditorToolbar
+      {editor}
+      onUploadClick={() => fileInputEl?.click()}
+      onOpenMediaPicker={() => onOpenMediaPicker?.()}
+      uploading={uploadingFile}
+    />
   {/if}
+  <input type="file" bind:this={fileInputEl} onchange={onFilePick} class="hidden" />
   <div bind:this={editorEl} class="prose prose-sm max-w-none flex-1 overflow-y-auto px-4 py-3 editor-content" style="outline: none;"></div>
-  {#if editor}
-    <div class="border-t px-2 py-1 flex items-center gap-1" style="border-color: var(--border-color); background: var(--bg-toolbar);">
-      <label
-        class="text-xs px-2 py-1 rounded cursor-pointer"
-        style="color: var(--text-btn-primary); background: var(--bg-btn-primary);"
-      >
-        {uploadingFile ? "Uploading..." : "Upload"}
-        <input type="file" bind:this={fileInputEl} onchange={onFilePick} class="hidden" />
-      </label>
-      <button
-        onclick={() => onOpenMediaPicker?.()}
-        class="text-xs px-2 py-1 rounded cursor-pointer"
-        style="color: var(--text-secondary); background: var(--bg-editor); border: 1px solid var(--border-input);"
-      >
-        Browse media
-      </button>
-    </div>
-  {/if}
 </div>

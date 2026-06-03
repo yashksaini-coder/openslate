@@ -2,7 +2,17 @@
   import type { Editor } from "@tiptap/core";
   import { common } from "lowlight";
 
-  let { editor }: { editor: Editor } = $props();
+  let {
+    editor,
+    onUploadClick,
+    onOpenMediaPicker,
+    uploading = false,
+  }: {
+    editor: Editor;
+    onUploadClick?: () => void;
+    onOpenMediaPicker?: () => void;
+    uploading?: boolean;
+  } = $props();
 
   let availableLangs = $state<string[]>(Object.keys(common).sort());
   let currentLang = $state("");
@@ -190,6 +200,15 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
     </button>
   {/if}
+
+  <span class="w-px h-5 mx-1" style="background: var(--border-color);"></span>
+
+  <button onclick={onUploadClick} class="toolbar-btn" title={uploading ? "Uploading..." : "Upload file"}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  </button>
+  <button onclick={onOpenMediaPicker} class="toolbar-btn" title="Browse media">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  </button>
 
   <!-- Code block language selector -->
   {#if isInCodeBlock}
