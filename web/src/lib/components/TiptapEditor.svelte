@@ -38,8 +38,11 @@
   const lowlight = createLowlight(common);
 
   let updatingContent = $state(false);
+  let uploadingFile = $state(false);
+  let fileInputEl: HTMLInputElement;
 
   async function handleFile(file: File) {
+    uploadingFile = true;
     const extra: Record<string, string> = {};
     if (noteId) extra.note_id = noteId;
     try {
@@ -48,12 +51,17 @@
         const data = await res.json();
         const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${data.id}/file`;
         if (editor) {
-          editor.chain().focus().setImage({ src: url }).run();
+          if (file.type.startsWith("image/")) {
+            editor.chain().focus().setImage({ src: url }).run();
+          } else {
+            editor.chain().focus().insertContent(`[${file.name}](${url})`).run();
+          }
         }
       }
     } catch {
       // ignore
     }
+    uploadingFile = false;
   }
 
   function handlePaste(e: ClipboardEvent): boolean {
@@ -138,6 +146,36 @@
     };
   });
 
+  async function handleUpload(file: File) {
+    uploadingFile = true;
+    const extra: Record<string, string> = {};
+    if (noteId) extra.note_id = noteId;
+    try {
+      const res = await uploadFile("/api/media", file, extra);
+      if (res.ok) {
+        const data = await res.json();
+        const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${data.id}/file`;
+        if (editor) {
+          if (file.type.startsWith("image/")) {
+            editor.chain().focus().setImage({ src: url }).run();
+          } else {
+            editor.chain().focus().insertContent(`[${file.name}](${url})`).run();
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    uploadingFile = false;
+    fileInputEl.value = "";
+  }
+
+  function onFilePick(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) handleUpload(file);
+  }
+
   $effect(() => {
     if (editor && !editor.isDestroyed) {
       const currentMd = editor.storage.markdown.getMarkdown();
@@ -156,13 +194,20 @@
   {/if}
   <div bind:this={editorEl} class="prose prose-sm max-w-none flex-1 overflow-y-auto px-4 py-3 editor-content" style="outline: none;"></div>
   {#if editor}
-    <div class="border-t px-2 py-1 flex gap-1" style="border-color: var(--border-color); background: var(--bg-toolbar);">
+    <div class="border-t px-2 py-1 flex items-center gap-1" style="border-color: var(--border-color); background: var(--bg-toolbar);">
+      <label
+        class="text-xs px-2 py-1 rounded cursor-pointer"
+        style="color: var(--text-btn-primary); background: var(--bg-btn-primary);"
+      >
+        {uploadingFile ? "Uploading..." : "Upload"}
+        <input type="file" bind:this={fileInputEl} onchange={onFilePick} class="hidden" />
+      </label>
       <button
         onclick={() => onOpenMediaPicker?.()}
         class="text-xs px-2 py-1 rounded cursor-pointer"
         style="color: var(--text-secondary); background: var(--bg-editor); border: 1px solid var(--border-input);"
       >
-        Insert media
+        Browse media
       </button>
     </div>
   {/if}
