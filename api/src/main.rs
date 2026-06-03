@@ -1,6 +1,7 @@
 mod auth;
 mod config;
 mod db;
+mod media;
 mod notes;
 mod preferences;
 mod search;
@@ -8,11 +9,14 @@ mod search;
 use axum::extract::FromRef;
 use axum::http::Method;
 use axum::{Router, middleware, routing::get};
+use s3::{Auth, Client, Credentials, providers};
 use tower_http::cors::AllowOrigin;
 
 #[derive(Clone)]
 struct AppState {
     db: sqlx::SqlitePool,
+    client: Client,
+    bucket: String,
 }
 
 impl FromRef<AppState> for sqlx::SqlitePool {
@@ -30,7 +34,24 @@ async fn main() {
     let pool = db::create_pool(&config.database_url).await;
     db::run_migrations(&pool).await;
 
-    let state = AppState { db: pool };
+    let preset = providers::cloudflare_r2(&config.r2_account_id, providers::R2Endpoint::Global)
+        .expect("Failed to create R2 preset");
+
+    let client = Client::builder(preset.endpoint())
+        .unwrap()
+        .region(preset.region())
+        .addressing_style(preset.addressing_style())
+        .auth(Auth::Static(
+            Credentials::new(&config.r2_access_key, &config.r2_secret_key).unwrap(),
+        ))
+        .build()
+        .expect("Failed to build S3 client");
+
+    let state = AppState {
+        db: pool,
+        client,
+        bucket: config.r2_bucket,
+    };
 
     let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(AllowOrigin::exact(config.frontend_url.parse().unwrap()))
@@ -56,6 +77,15 @@ async fn main() {
                 .delete(notes::delete_note),
         )
         .route("/api/search", get(search::search_notes))
+        .route(
+            "/api/media",
+            get(media::list_media).post(media::upload_media),
+        )
+        .route(
+            "/api/media/{id}",
+            get(media::get_media).delete(media::delete_media).put(media::update_media),
+        )
+        .route("/api/media/{id}/file", get(media::serve_media_file))
         .route(
             "/api/preferences",
             get(preferences::get_preferences).put(preferences::update_preferences),

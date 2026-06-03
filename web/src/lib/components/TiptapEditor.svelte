@@ -9,12 +9,28 @@
   import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
   import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
   import Highlight from "@tiptap/extension-highlight";
+  import ImageExtension from "@tiptap/extension-image";
   import { Markdown } from "tiptap-markdown";
   import { createLowlight, common } from "lowlight";
   import { Editor } from "@tiptap/core";
   import EditorToolbar from "./EditorToolbar.svelte";
+  import { uploadFile } from "$lib/api";
 
-  let { content = "", onContentChange }: { content?: string; onContentChange?: (md: string) => void } = $props();
+  let {
+    content = "",
+    noteId = "",
+    insertMediaMd = "",
+    insertMediaKey = 0,
+    onContentChange,
+    onOpenMediaPicker,
+  }: {
+    content?: string;
+    noteId?: string;
+    insertMediaMd?: string;
+    insertMediaKey?: number;
+    onContentChange?: (md: string) => void;
+    onOpenMediaPicker?: () => void;
+  } = $props();
 
   let editorEl: HTMLDivElement;
   let editor: Editor = $state() as unknown as Editor;
@@ -23,40 +39,77 @@
 
   let updatingContent = $state(false);
 
+  async function handleFile(file: File) {
+    const extra: Record<string, string> = {};
+    if (noteId) extra.note_id = noteId;
+    try {
+      const res = await uploadFile("/api/media", file, extra);
+      if (res.ok) {
+        const data = await res.json();
+        const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${data.id}/file`;
+        if (editor) {
+          editor.chain().focus().setImage({ src: url }).run();
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  function handlePaste(e: ClipboardEvent): boolean {
+    const items = e.clipboardData?.items;
+    if (!items) return false;
+    for (const item of items) {
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleFile(file);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function handleDrop(e: DragEvent): boolean {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      e.preventDefault();
+      handleFile(file);
+      return true;
+    }
+    return false;
+  }
+
+  let prevInsertKey = 0;
+  $effect(() => {
+    if (insertMediaKey !== prevInsertKey && insertMediaMd && editor && !editor.isDestroyed) {
+      prevInsertKey = insertMediaKey;
+      editor.chain().focus().insertContent(insertMediaMd).run();
+    }
+  });
+
   onMount(() => {
     editor = new Editor({
       element: editorEl,
       extensions: [
         StarterKit.configure({
           codeBlock: false,
-          heading: {
-            levels: [1, 2, 3],
-          },
+          heading: { levels: [1, 2, 3] },
         }),
         Underline,
-        LinkExtension.configure({
-          openOnClick: true,
-        }),
+        LinkExtension.configure({ openOnClick: true }),
         TaskList,
-        TaskItem.configure({
-          nested: true,
-        }),
-        Placeholder.configure({
-          placeholder: "Write in markdown...",
-        }),
-        CodeBlockLowlight.configure({
-          lowlight,
-          defaultLanguage: null,
-        }),
-        Table.configure({
-          resizable: true,
-        }),
+        TaskItem.configure({ nested: true }),
+        Placeholder.configure({ placeholder: "Write in markdown..." }),
+        CodeBlockLowlight.configure({ lowlight, defaultLanguage: null }),
+        Table.configure({ resizable: true }),
         TableRow,
         TableCell,
         TableHeader,
-        Highlight.configure({
-          multicolor: true,
-        }),
+        Highlight.configure({ multicolor: true }),
+        ImageExtension,
         Markdown.configure({
           html: true,
           tightLists: true,
@@ -69,6 +122,10 @@
         }),
       ],
       content,
+      editorProps: {
+        handlePaste: (_view, event) => handlePaste(event),
+        handleDrop: (_view, event) => handleDrop(event),
+      },
       onUpdate: ({ editor }) => {
         if (updatingContent) return;
         const md = editor.storage.markdown.getMarkdown();
@@ -98,4 +155,15 @@
     <EditorToolbar {editor} />
   {/if}
   <div bind:this={editorEl} class="prose prose-sm max-w-none flex-1 overflow-y-auto px-4 py-3 editor-content" style="outline: none;"></div>
+  {#if editor}
+    <div class="border-t px-2 py-1 flex gap-1" style="border-color: var(--border-color); background: var(--bg-toolbar);">
+      <button
+        onclick={() => onOpenMediaPicker?.()}
+        class="text-xs px-2 py-1 rounded cursor-pointer"
+        style="color: var(--text-secondary); background: var(--bg-editor); border: 1px solid var(--border-input);"
+      >
+        Insert media
+      </button>
+    </div>
+  {/if}
 </div>

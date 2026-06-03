@@ -5,6 +5,8 @@
   import * as theme from "$lib/theme.svelte";
   import { goto } from "$app/navigation";
   import TiptapEditor from "$lib/components/TiptapEditor.svelte";
+  import MediaGallery from "$lib/components/MediaGallery.svelte";
+  import MediaPicker from "$lib/components/MediaPicker.svelte";
 
   type NoteSummary = {
     id: string;
@@ -45,6 +47,11 @@
   let savedTags = "";
 
   let currentTheme = $state(theme.getTheme());
+  let activeTab = $state<"notes" | "media">("notes");
+  let showMediaPicker = $state(false);
+  let mediaInsertKey = $state(0);
+  let mediaToInsertMd = $state("");
+  let noteMedia = $state<{ id: string; filename: string; original_name: string; mime_type: string; }[]>([]);
 
   let ctxMenu = $state<{ x: number; y: number; note?: NoteSummary } | null>(null);
   let ctxMenuNote = $state<NoteSummary | null>(null);
@@ -91,6 +98,10 @@
     if ((e.metaKey || e.ctrlKey) && e.key === "f") {
       e.preventDefault();
       focusSearch();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "M") {
+      e.preventDefault();
+      activeTab = activeTab === "media" ? "notes" : "media";
     }
     if (e.key === "Escape") {
       if (searchQuery) {
@@ -150,6 +161,30 @@
     searchInputEl?.blur();
   }
 
+  function openMediaPicker() {
+    showMediaPicker = true;
+  }
+
+  function handleMediaSelect(item: { id: string; original_name: string; mime_type: string }) {
+    const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${item.id}/file`;
+    const md = item.mime_type.startsWith("image/")
+      ? `![${item.original_name}](${url})`
+      : `[${item.original_name}](${url})`;
+    mediaToInsertMd = md;
+    mediaInsertKey++;
+    showMediaPicker = false;
+  }
+
+  async function loadNoteMedia(noteId: string) {
+    try {
+      const res = await api(`/api/media?note_id=${noteId}`);
+      if (res.ok) noteMedia = await res.json();
+      else noteMedia = [];
+    } catch {
+      noteMedia = [];
+    }
+  }
+
   async function selectNote(slug: string) {
     if (dirty) await save();
     const res = await api(`/api/notes/${slug}`);
@@ -164,6 +199,7 @@
       savedTags = note.tags.join(", ");
       creating = false;
       dirty = false;
+      loadNoteMedia(note.id);
     }
   }
 
@@ -287,25 +323,45 @@
     style="border-color: var(--border-color);"
     oncontextmenu={(e) => handleCtxMenu(e)}
   >
-    <div class="p-3 border-b flex items-center justify-between" style="border-color: var(--border-color);">
-      <h1 class="font-bold text-lg" style="color: var(--text-primary);">openslate</h1>
-      <button onclick={handleLogout} class="text-xs" style="color: var(--text-danger);">Log out</button>
+    <div class="p-3 border-b flex flex-col gap-2" style="border-color: var(--border-color);">
+      <div class="flex items-center justify-between">
+        <h1 class="font-bold text-lg" style="color: var(--text-primary);">openslate</h1>
+        <button onclick={handleLogout} class="text-xs" style="color: var(--text-danger);">Log out</button>
+      </div>
+      <div class="flex gap-1">
+        <button
+          onclick={() => activeTab = "notes"}
+          class="tab-btn"
+          class:active={activeTab === "notes"}
+        >
+          Notes
+        </button>
+        <button
+          onclick={() => activeTab = "media"}
+          class="tab-btn"
+          class:active={activeTab === "media"}
+        >
+          Media
+        </button>
+      </div>
     </div>
-    <div class="px-3 pt-2">
-      <input
-        bind:this={searchInputEl}
-        value={searchQuery}
-        oninput={handleSearchInput}
-        placeholder="Search notes... (⌘F)"
-        class="w-full text-sm px-2 py-1.5 rounded outline-none"
-        style="color: var(--text-primary); background: var(--bg-editor); border: 1px solid var(--border-input);"
-      />
-    </div>
-    <button onclick={startCreate} class="new-note-btn">
-      + New note
-    </button>
+    {#if activeTab === "notes"}
+      <div class="px-3 pt-2">
+        <input
+          bind:this={searchInputEl}
+          value={searchQuery}
+          oninput={handleSearchInput}
+          placeholder="Search notes... (⌘F)"
+          class="w-full text-sm px-2 py-1.5 rounded outline-none"
+          style="color: var(--text-primary); background: var(--bg-editor); border: 1px solid var(--border-input);"
+        />
+      </div>
+      <button onclick={startCreate} class="new-note-btn">
+        + New note
+      </button>
+    {/if}
     <nav class="sidebar-nav flex-1 overflow-y-auto p-2 space-y-1">
-      {#if searchQuery}
+      {#if activeTab === "notes" && searchQuery}
         {#if searching}
           <p class="text-sm p-2" style="color: var(--text-tertiary);">Searching...</p>
         {:else if searchResults.length === 0}
@@ -324,11 +380,11 @@
             </button>
           {/each}
         {/if}
-      {:else if loading}
+      {:else if activeTab === "notes" && loading}
         <p class="text-sm p-2" style="color: var(--text-tertiary);">Loading...</p>
-      {:else if notes.length === 0}
+      {:else if activeTab === "notes" && notes.length === 0}
         <p class="text-sm p-2" style="color: var(--text-tertiary);">No notes yet</p>
-      {:else}
+      {:else if activeTab === "notes"}
         {#each notes as note}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
@@ -385,7 +441,9 @@
 
   <!-- Main area -->
   <main class="flex-1 flex flex-col min-h-0" style="background: var(--bg-page);">
-    {#if selected || creating}
+    {#if activeTab === "media"}
+      <MediaGallery />
+    {:else if selected || creating}
       <div class="flex-1 flex flex-col min-h-0 p-4 gap-2">
         <input
           value={editTitle}
@@ -401,7 +459,33 @@
           class="text-sm outline-none border-b pb-2"
           style="color: var(--text-secondary); caret-color: var(--text-primary); border-color: var(--border-color); background: transparent;"
         />
-        <TiptapEditor content={editContent} onContentChange={(md) => { editContent = md; markDirty(); }} />
+        <TiptapEditor
+          content={editContent}
+          noteId={selected?.id ?? ""}
+          insertMediaMd={mediaToInsertMd}
+          insertMediaKey={mediaInsertKey}
+          onContentChange={(md) => { editContent = md; markDirty(); }}
+          onOpenMediaPicker={openMediaPicker}
+        />
+        {#if noteMedia.length > 0}
+          <div class="border-t pt-2 mt-4" style="border-color: var(--border-color);">
+            <p class="text-xs mb-1 font-medium" style="color: var(--text-secondary);">Attachments ({noteMedia.length})</p>
+            <div class="flex gap-2 flex-wrap">
+              {#each noteMedia as m}
+                <a
+                  href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${m.id}/file`}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="text-xs px-2 py-1 rounded border inline-flex items-center gap-1 hover:opacity-80"
+                  style="border-color: var(--border-color); color: var(--text-primary); background: var(--bg-editor); text-decoration: none;"
+                >
+                  {m.mime_type.startsWith("image/") ? "🖼" : m.mime_type.startsWith("video/") ? "🎬" : "📄"}
+                  {m.original_name}
+                </a>
+              {/each}
+            </div>
+          </div>
+        {/if}
         {#if selected?.backlinks && selected.backlinks.length > 0}
           <div class="border-t pt-2 mt-4" style="border-color: var(--border-color);">
             <p class="text-xs mb-1" style="color: var(--text-secondary);">Linked from:</p>
@@ -465,6 +549,13 @@
   </div>
 {/if}
 
+{#if showMediaPicker}
+  <MediaPicker
+    onClose={() => showMediaPicker = false}
+    onSelect={handleMediaSelect}
+  />
+{/if}
+
 <style>
   .note-btn-wrapper {
     border-radius: 0.25rem;
@@ -484,6 +575,25 @@
     color: var(--text-primary);
   }
   .ctx-menu-item:hover {
+    background: var(--bg-note-hover);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    border-radius: 0.25rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+  .tab-btn.active {
+    background: var(--bg-note-active);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .tab-btn:hover:not(.active) {
     background: var(--bg-note-hover);
   }
 </style>

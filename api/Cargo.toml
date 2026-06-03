@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = "0.8"
+axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.9", features = [
     "sqlite",
@@ -16,6 +16,7 @@ libsqlite3-sys = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
+s3 = { version = "0.1", features = ["providers"] }
 tower-http = { version = "0.6", features = ["cors"] }
 dotenvy = "0.15"
 axum-extra = { version = "0.10", features = ["cookie"] }
