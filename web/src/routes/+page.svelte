@@ -173,6 +173,12 @@
     mediaToInsertMd = md;
     mediaInsertKey++;
     showMediaPicker = false;
+    if (selected?.id) {
+      api(`/api/media/${item.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ note_id: selected.id }),
+      });
+    }
   }
 
   async function loadNoteMedia(noteId: string) {
@@ -183,6 +189,14 @@
     } catch {
       noteMedia = [];
     }
+  }
+
+  async function removeNoteMedia(m: { id: string }) {
+    const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${m.id}/file`;
+    await api(`/api/media/${m.id}`, { method: "PUT", body: JSON.stringify({ note_id: "" }) });
+    const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    editContent = editContent.replace(new RegExp(`!\\[.*?\\]\\(${escaped}\\)|\\[.*?\\]\\(${escaped}\\)`, "g"), "");
+    if (selected?.id) loadNoteMedia(selected.id);
   }
 
   async function selectNote(slug: string) {
@@ -466,22 +480,31 @@
           insertMediaKey={mediaInsertKey}
           onContentChange={(md) => { editContent = md; markDirty(); }}
           onOpenMediaPicker={openMediaPicker}
+          onUploadComplete={() => { if (selected?.id) loadNoteMedia(selected.id); }}
         />
         {#if noteMedia.length > 0}
           <div class="border-t pt-2 mt-4" style="border-color: var(--border-color);">
             <p class="text-xs mb-1 font-medium" style="color: var(--text-secondary);">Attachments ({noteMedia.length})</p>
             <div class="flex gap-2 flex-wrap">
               {#each noteMedia as m}
-                <a
-                  href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${m.id}/file`}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="text-xs px-2 py-1 rounded border inline-flex items-center gap-1 hover:opacity-80"
-                  style="border-color: var(--border-color); color: var(--text-primary); background: var(--bg-editor); text-decoration: none;"
-                >
-                  {m.mime_type.startsWith("image/") ? "🖼" : m.mime_type.startsWith("video/") ? "🎬" : "📄"}
-                  {m.original_name}
-                </a>
+                <div class="inline-flex items-center gap-1">
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${m.id}/file`}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="text-xs px-2 py-1 rounded border inline-flex items-center gap-1 hover:opacity-80"
+                    style="border-color: var(--border-color); color: var(--text-primary); background: var(--bg-editor); text-decoration: none;"
+                  >
+                    {m.mime_type.startsWith("image/") ? "🖼" : m.mime_type.startsWith("video/") ? "🎬" : "📄"}
+                    {m.original_name}
+                  </a>
+                  <button
+                    onclick={() => removeNoteMedia(m)}
+                    class="text-xs px-1 rounded"
+                    style="color: var(--text-danger); border: 1px solid var(--border-color); background: var(--bg-editor); cursor: pointer;"
+                    title="Remove from note"
+                  >&times;</button>
+                </div>
               {/each}
             </div>
           </div>

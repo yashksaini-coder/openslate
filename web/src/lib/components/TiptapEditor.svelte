@@ -23,6 +23,7 @@
     insertMediaKey = 0,
     onContentChange,
     onOpenMediaPicker,
+    onUploadComplete,
   }: {
     content?: string;
     noteId?: string;
@@ -30,6 +31,7 @@
     insertMediaKey?: number;
     onContentChange?: (md: string) => void;
     onOpenMediaPicker?: () => void;
+    onUploadComplete?: () => void;
   } = $props();
 
   let editorEl: HTMLDivElement;
@@ -41,7 +43,7 @@
   let uploadingFile = $state(false);
   let fileInputEl: HTMLInputElement;
 
-  async function handleFile(file: File) {
+  async function uploadAndInsert(file: File) {
     uploadingFile = true;
     const extra: Record<string, string> = {};
     if (noteId) extra.note_id = noteId;
@@ -57,6 +59,7 @@
             editor.chain().focus().insertContent(`[${file.name}](${url})`).run();
           }
         }
+        onUploadComplete?.();
       }
     } catch {
       // ignore
@@ -72,7 +75,7 @@
         const file = item.getAsFile();
         if (file) {
           e.preventDefault();
-          handleFile(file);
+          uploadAndInsert(file);
           return true;
         }
       }
@@ -84,7 +87,7 @@
     const file = e.dataTransfer?.files?.[0];
     if (file) {
       e.preventDefault();
-      handleFile(file);
+      uploadAndInsert(file);
       return true;
     }
     return false;
@@ -95,6 +98,27 @@
     if (insertMediaKey !== prevInsertKey && insertMediaMd && editor && !editor.isDestroyed) {
       prevInsertKey = insertMediaKey;
       editor.chain().focus().insertContent(insertMediaMd).run();
+      onUploadComplete?.();
+    }
+  });
+
+  let pendingFirstContent = true;
+
+  $effect(() => {
+    if (editor && !editor.isDestroyed) {
+      if (pendingFirstContent) {
+        pendingFirstContent = false;
+        updatingContent = true;
+        editor.commands.setContent(content);
+        updatingContent = false;
+      } else {
+        const currentMd = editor.storage.markdown.getMarkdown();
+        if (content !== undefined && content !== currentMd) {
+          updatingContent = true;
+          editor.commands.setContent(content);
+          updatingContent = false;
+        }
+      }
     }
   });
 
@@ -129,7 +153,6 @@
           transformCopiedText: true,
         }),
       ],
-      content,
       editorProps: {
         handlePaste: (_view, event) => handlePaste(event),
         handleDrop: (_view, event) => handleDrop(event),
@@ -146,46 +169,14 @@
     };
   });
 
-  async function handleUpload(file: File) {
-    uploadingFile = true;
-    const extra: Record<string, string> = {};
-    if (noteId) extra.note_id = noteId;
-    try {
-      const res = await uploadFile("/api/media", file, extra);
-      if (res.ok) {
-        const data = await res.json();
-        const url = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${data.id}/file`;
-        if (editor) {
-          if (file.type.startsWith("image/")) {
-            editor.chain().focus().setImage({ src: url }).run();
-          } else {
-            editor.chain().focus().insertContent(`[${file.name}](${url})`).run();
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-    uploadingFile = false;
-    fileInputEl.value = "";
-  }
-
   function onFilePick(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) handleUpload(file);
-  }
-
-  $effect(() => {
-    if (editor && !editor.isDestroyed) {
-      const currentMd = editor.storage.markdown.getMarkdown();
-      if (content !== undefined && content !== currentMd) {
-        updatingContent = true;
-        editor.commands.setContent(content);
-        updatingContent = false;
-      }
+    if (file) {
+      uploadAndInsert(file);
+      input.value = "";
     }
-  });
+  }
 </script>
 
 <div class="tiptap-editor flex flex-col flex-1 border rounded overflow-hidden bg-editor" style="border-color: var(--border-color);">
