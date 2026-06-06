@@ -96,3 +96,46 @@ pub async fn auth_middleware(
 pub async fn me() -> Json<serde_json::Value> {
     Json(json!({ "authenticated": true }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Json;
+    use serde_json::json;
+    use serial_test::serial;
+
+    fn setup_env() {
+        unsafe {
+            // Use a well-known hash for "password123"
+            let hash = bcrypt::hash("password123", bcrypt::DEFAULT_COST)
+                .expect("failed to hash test password");
+            std::env::set_var("ADMIN_PASSWORD_HASH", hash);
+            std::env::set_var("JWT_SECRET", "test-secret");
+        }
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_login_success() {
+        setup_env();
+        let jar = CookieJar::new();
+        let body = Json(LoginBody {
+            password: "password123".to_string(),
+        });
+        let (_, response) = login(jar, body).await.unwrap();
+        assert_eq!(response.0.get("success"), Some(&json!(true)));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_login_wrong_password() {
+        setup_env();
+        let jar = CookieJar::new();
+        let body = Json(LoginBody {
+            password: "wrongpass".to_string(),
+        });
+        let result = login(jar, body).await;
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), StatusCode::UNAUTHORIZED);
+    }
+}
