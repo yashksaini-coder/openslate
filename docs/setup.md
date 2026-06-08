@@ -11,7 +11,7 @@ This guide walks through setting up OpenSlate for local development.
 ## Clone and Install
 
 ```bash
-git clone https://github.com/anomalyco/openslate.git
+git clone https://github.com/MrSheerluck/openslate.git
 cd openslate
 ```
 
