@@ -2,11 +2,13 @@ services:
   openslate:
     build: .
     ports:
-      - "8080:8080"                        # local dev / IP-only
-      # - "80:80"                           # uncomment for custom domain + HTTPS
-      # - "443:443"                         # uncomment for custom domain + HTTPS
+      - "8080:8080"
+      - "80:80"
+      - "443:443"
     volumes:
       - data:/data
+    env_file:
+      - .env
     environment:
       - JWT_SECRET=${JWT_SECRET}
       - DOMAIN=${DOMAIN}

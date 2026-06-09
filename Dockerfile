@@ -28,8 +28,8 @@ RUN chmod +x /entrypoint.sh
 ENV DATABASE_URL=sqlite:/data/data.db?mode=rwc
 ENV HOST=0.0.0.0
 ENV PORT=3001
-ENV FRONTEND_URL=http://localhost:8080
+ENV XDG_DATA_HOME=/data
 VOLUME /data
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD curl -f http://localhost:8080/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD curl -f http://localhost:3001/api/health || exit 1
 ENTRYPOINT ["/entrypoint.sh"]
