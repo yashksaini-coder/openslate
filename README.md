@@ -9,32 +9,32 @@ A self-hosted markdown note-taking app. Fast, simple, private. Access your notes
 ### Docker (local)
 
 ```bash
-git clone https://github.com/MrSheerluck/openslate.git
+git clone https://github.com/MrSheerluck/openslate
 cd openslate
-cp .env.example .env
-docker compose up -d
+cp .env.example .env     # set JWT_SECRET
+docker compose up -d     # open http://localhost:8080
 ```
 
-Open **http://localhost:8080**.
+### DigitalOcean VPS
 
-### Digital Ocean (or any VPS)
-
-**Quickest way** — create a Droplet (Ubuntu 24.04) and paste [`scripts/cloud-init.yaml`](scripts/cloud-init.yaml) into the **User Data** field. In 2–3 minutes your app is at `http://<ip>:8080`.
-
-**Manual** — SSH in and run:
+**Recommended:** Build the image on your machine (the $4 droplet has too little RAM to compile Rust), push to GitHub Container Registry (free), then pull on the VPS:
 
 ```bash
-apt install -y docker.io docker-compose-v2
+# On your machine
+docker buildx build --platform linux/amd64 -t ghcr.io/you/openslate:latest --push .
+
+# On the VPS (after Docker is installed)
 git clone https://github.com/MrSheerluck/openslate /opt/openslate
 cd /opt/openslate
-cp .env.example .env
-sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+cp .env.example .env && sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+sed -i 's#build: .#image: ghcr.io/you/openslate:latest#' docker-compose.yml
+echo "your-token" | docker login ghcr.io -u you --password-stdin
 docker compose up -d
 ```
 
-**Custom domain + HTTPS** — add `DOMAIN=notes.example.com` to `.env`, point an A record to your IP, restart. Caddy provisions Let's Encrypt automatically.
+**Custom domain:** Add `DOMAIN=notes.example.com` to `.env`, point an A record to your IP, restart. Caddy auto-provisions HTTPS.
 
-Full guide: [docs/deployment.md](docs/deployment.md)
+Full step-by-step guide: [docs/deployment.md](docs/deployment.md)
 
 ---
 

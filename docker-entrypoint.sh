@@ -5,6 +5,7 @@ trap 'kill $API_PID 2>/dev/null; exit' TERM INT
 
 if [ -n "$DOMAIN" ]; then
   export FRONTEND_URL="https://${DOMAIN}"
+  sed -i "s/:8080/${DOMAIN}/" /etc/caddy/Caddyfile
 else
   export FRONTEND_URL="http://localhost:8080"
 fi
