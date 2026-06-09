@@ -8,6 +8,7 @@
   import MediaGallery from "$lib/components/MediaGallery.svelte";
   import MediaPicker from "$lib/components/MediaPicker.svelte";
   import CommandPalette from "$lib/components/CommandPalette.svelte";
+  import { PanelLeftOpen, PanelLeftClose } from "@lucide/svelte";
 
   type NoteSummary = {
     id: string;
@@ -66,6 +67,7 @@
   let searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
   let cmdPaletteOpen = $state(false);
+  let sidebarCollapsed = $state(false);
 
   onMount(() => {
     loadNotes();
@@ -119,6 +121,11 @@
           renamingSlug = null;
           renameValue = "";
         }
+      }
+      if (mod && !e.shiftKey && e.code === "Backslash") {
+        e.preventDefault();
+        e.stopPropagation();
+        sidebarCollapsed = !sidebarCollapsed;
       }
     }
 
@@ -361,20 +368,41 @@
 <div class="flex h-screen">
   <!-- Sidebar -->
   <aside
-    class="w-64 border-r flex flex-col bg-sidebar"
+    class="sidebar border-r flex flex-col bg-sidebar"
+    class:sidebar-collapsed={sidebarCollapsed}
     style="border-color: var(--border-color);"
     oncontextmenu={(e) => handleCtxMenu(e)}
   >
     <div class="p-3 border-b flex flex-col gap-2" style="border-color: var(--border-color);">
       <div class="flex items-center justify-between">
-        <h1 class="font-bold text-lg" style="color: var(--text-primary);">openslate</h1>
-        <div class="flex items-center gap-2">
-          <button onclick={() => cmdPaletteOpen = true} class="text-xs px-1.5 py-0.5 rounded border cursor-pointer hover:opacity-80" style="color: var(--text-tertiary); border-color: var(--border-color);" title="Command palette (⌘⇧P / Ctrl+Shift+P)">
-            ⌘⇧P
+        {#if sidebarCollapsed}
+          <button
+            onclick={() => sidebarCollapsed = false}
+            class="cursor-pointer hover:opacity-80 p-1"
+            style="color: var(--text-secondary);"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen size={18} />
           </button>
-          <button onclick={handleLogout} class="text-xs" style="color: var(--text-danger);">Log out</button>
-        </div>
+        {:else}
+          <h1 class="font-bold text-lg" style="color: var(--text-primary);">openslate</h1>
+          <div class="flex items-center gap-2">
+            <button onclick={() => cmdPaletteOpen = true} class="text-xs px-1.5 py-0.5 rounded border cursor-pointer hover:opacity-80" style="color: var(--text-tertiary); border-color: var(--border-color);" title="Command palette (⌘⇧P / Ctrl+Shift+P)">
+              ⌘⇧P
+            </button>
+            <button onclick={handleLogout} class="text-xs" style="color: var(--text-danger);">Log out</button>
+            <button
+              onclick={() => sidebarCollapsed = true}
+              class="cursor-pointer hover:opacity-80 p-1"
+              style="color: var(--text-tertiary);"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose size={18} />
+            </button>
+          </div>
+        {/if}
       </div>
+      {#if !sidebarCollapsed}
       <div class="flex gap-1">
         <button
           onclick={() => activeTab = "notes"}
@@ -391,7 +419,9 @@
           Media
         </button>
       </div>
+      {/if}
     </div>
+    {#if !sidebarCollapsed}
     {#if activeTab === "notes"}
       <div class="px-3 pt-2">
         <input
@@ -484,6 +514,7 @@
         <button onclick={() => { theme.setTheme("tokyo-night"); currentTheme = "tokyo-night"; }} class="theme-dot" class:active={currentTheme === "tokyo-night"} style="background: #1a1b26;" title="Tokyo Night"></button>
       </div>
     </div>
+    {/if}
   </aside>
 
   <!-- Main area -->
