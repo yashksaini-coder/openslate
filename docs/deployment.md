@@ -54,6 +54,8 @@ R2_SECRET_KEY=your-secret
 
 Then restart: `docker compose down && docker compose up -d`.
 
+> **Note for local use:** The repo's `docker-compose.yml` includes Watchtower for automated VPS updates. Running locally, Watchtower will log harmless errors trying to pull from GHCR without auth. You can remove the `watchtower:` service block if you don't need it.
+
 ---
 
 ## Option 2: Digital Ocean VPS
@@ -222,28 +224,59 @@ After changing any value, run: `docker compose down && docker compose up -d`
 
 ## Updates
 
-Pull the latest code and rebuild:
+### Option A: Automated (CI + Watchtower) — recommended
+
+Once set up, updates are fully hands-off: push to `main` and the VPS updates itself within minutes.
+
+**How it works:**
+- A GitHub Actions workflow builds and pushes the Docker image on every push to `main`.
+- [Watchtower](https://containrrr.dev/watchtower/) runs alongside your app on the VPS. Every 2 minutes it checks GHCR for a newer image, pulls it, and restarts the container.
+
+**One-time setup:**
+
+1. Add a GitHub personal access token as a repo secret:
+   - **GitHub → Repo Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `GHCR_PAT`
+   - Value: a [classic PAT](https://github.com/settings/tokens) with `read:packages` and `write:packages` scopes.
+
+2. On your VPS, add Watchtower to `docker-compose.yml` (already included in the repo — just make sure it's present):
+
+   ```yaml
+   watchtower:
+     image: containrrr/watchtower
+     volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+     environment:
+       - WATCHTOWER_CLEANUP=true
+       - WATCHTOWER_POLL_INTERVAL=120
+     restart: unless-stopped
+   ```
+
+   Then: `docker compose down && docker compose up -d`
+
+From then on: `git push` to `main` → CI builds & pushes → Watchtower detects within 2 min → auto-updates. Nothing else needed.
+
+> **Note:** If you're only running OpenSlate locally (Option 1), you can remove Watchtower from `docker-compose.yml` or disable it with `profiles` — it's only useful on a VPS.
+
+### Option B: Manual (push from your machine)
+
+Build and push from your local machine, then pull on the VPS:
 
 ```bash
-cd /opt/openslate
-git pull
-```
-
-If using pre-built images (recommended):
-
-```bash
+# On your machine
 docker buildx build --platform linux/amd64 -t ghcr.io/you/openslate:latest --push .
-# then on VPS:
-docker compose pull && docker compose up -d
+
+# On the VPS
+cd /opt/openslate && docker compose pull && docker compose up -d
 ```
 
-If building on the VPS (only if you have enough RAM):
+### Option C: Build on VPS (only if you have enough RAM)
 
 ```bash
-docker compose up -d --build
+cd /opt/openslate && git pull && docker compose up -d --build
 ```
 
-Your SQLite database in the Docker volume is preserved across all updates.
+Your SQLite database in the Docker volume is preserved across all update methods.
 
 ---
 
