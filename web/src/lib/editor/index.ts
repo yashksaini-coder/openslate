@@ -42,13 +42,11 @@ import { scala } from "@codemirror/legacy-modes/mode/clike";
 import { kotlin } from "@codemirror/legacy-modes/mode/clike";
 
 import { editorTheme } from "./theme";
-import { createModeToggleKeymap } from "./keymap";
 import { createUploadExtension } from "./upload";
 import { livePreviewPlugin } from "./decorations";
 import { openslateSyntaxHighlighting } from "./syntax";
 
 export interface EditorExtensionsOptions {
-  onModeToggle: () => void;
   onFileUpload: (file: File, view: EditorView) => void;
   onDocChange: (doc: string) => void;
 }
@@ -158,7 +156,6 @@ export function createEditorExtensions(options: EditorExtensionsOptions) {
     markdown({ base: markdownLanguage, codeLanguages }),
     openslateSyntaxHighlighting,
     editorTheme,
-    createModeToggleKeymap(options.onModeToggle),
     createUploadExtension(options.onFileUpload),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {

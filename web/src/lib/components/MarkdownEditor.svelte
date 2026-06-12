@@ -1,13 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { createEditorExtensions, EditorState, EditorView } from "$lib/editor";
-  import MarkdownIt from "markdown-it";
-  import katex from "katex";
-  import markdownItKatex from "@traptitech/markdown-it-katex";
-  import hljs from "highlight.js";
   import { uploadFile } from "$lib/api";
-
-  type ViewMode = "edit" | "split" | "preview";
 
   let {
     content = "",
@@ -28,30 +22,11 @@
   } = $props();
 
   let editorContainer = $state<HTMLDivElement | null>(null);
-  let previewEl = $state<HTMLDivElement | null>(null);
   let fileInputEl = $state<HTMLInputElement | null>(null);
 
-  let viewMode = $state<ViewMode>("edit");
   let cmView: EditorView | null = null;
   let uploadingFile = $state(false);
   let updatingContent = false;
-
-  const md = new MarkdownIt({
-    html: true,
-    linkify: true,
-    typographer: false,
-    highlight(str: string, lang: string) {
-      if (lang && hljs.getLanguage(lang)) {
-        try {
-          return hljs.highlight(str, { language: lang }).value;
-        } catch {}
-      }
-      return "";
-    },
-  }).use(markdownItKatex, {
-    katex,
-    throwOnError: false,
-  });
 
   let prevInsertKey = 0;
 
@@ -67,12 +42,6 @@
   });
 
   let initialSet = false;
-
-  $effect(() => {
-    if (previewEl && cmView) {
-      renderPreview(cmView.state.doc.toString());
-    }
-  });
 
   $effect(() => {
     if (!cmView) return;
@@ -98,35 +67,12 @@
         changes: { from: 0, to: view.state.doc.length, insert: content },
       });
       updatingContent = false;
-      renderPreview(content);
     }
   });
-
-  function renderPreview(text: string) {
-    if (!previewEl) return;
-    previewEl.innerHTML = md.render(text || "");
-  }
-
-  let previewDebounce: ReturnType<typeof setTimeout> | null = null;
 
   function handleDocChange(doc: string) {
     if (updatingContent) return;
     onContentChange?.(doc);
-    if (previewDebounce) clearTimeout(previewDebounce);
-    previewDebounce = setTimeout(() => renderPreview(doc), 150);
-  }
-
-  function toggleMode() {
-    if (viewMode === "edit") viewMode = "split";
-    else if (viewMode === "split") viewMode = "preview";
-    else viewMode = "edit";
-  }
-
-  function setMode(mode: ViewMode) {
-    viewMode = mode;
-    if (mode !== "preview" && cmView) {
-      requestAnimationFrame(() => cmView?.focus());
-    }
   }
 
   async function uploadAndInsert(file: File, view: EditorView) {
@@ -165,7 +111,6 @@
 
   onMount(() => {
     const extensions = createEditorExtensions({
-      onModeToggle: toggleMode,
       onFileUpload: (file, view) => uploadAndInsert(file, view),
       onDocChange: handleDocChange,
     });
@@ -180,10 +125,7 @@
       parent: editorContainer!,
     });
 
-    if (content) renderPreview(content);
-
     return () => {
-      if (previewDebounce) clearTimeout(previewDebounce);
       cmView?.destroy();
       cmView = null;
     };
@@ -193,29 +135,6 @@
 <div class="markdown-editor flex flex-col flex-1 border rounded overflow-hidden bg-editor" style="border-color: var(--border-color);">
   <!-- Toolbar -->
   <div class="flex items-center gap-1 border-b px-2 py-1.5 bg-toolbar sticky top-0 z-10" style="border-color: var(--border-color);">
-    <div class="flex items-center gap-0 border rounded overflow-hidden" style="border-color: var(--border-color);">
-      <button
-        onclick={() => setMode("edit")}
-        class="mode-btn"
-        class:active={viewMode === "edit"}
-        title="Edit (Ctrl+Shift+M / Ctrl+\)"
-      >Edit</button>
-      <button
-        onclick={() => setMode("split")}
-        class="mode-btn"
-        class:active={viewMode === "split"}
-        title="Split (Ctrl+Shift+M / Ctrl+\)"
-      >Split</button>
-      <button
-        onclick={() => setMode("preview")}
-        class="mode-btn"
-        class:active={viewMode === "preview"}
-        title="Preview (Ctrl+Shift+M / Ctrl+\)"
-      >Preview</button>
-    </div>
-
-    <span class="w-px h-5 mx-1" style="background: var(--border-color);"></span>
-
     <button
       onclick={() => fileInputEl?.click()}
       class="toolbar-btn"
@@ -238,22 +157,10 @@
 
   <input type="file" bind:this={fileInputEl} onchange={onFilePick} class="hidden" />
 
-  <!-- Editor + Preview -->
-  <div class="flex flex-1 min-h-0">
-    <div
-      bind:this={editorContainer}
-      class="flex-1 min-w-0 overflow-hidden"
-      class:hidden={viewMode === "preview"}
-      class:half-width={viewMode === "split"}
-      style="border-right: {viewMode === 'split' ? '1px solid var(--border-color)' : 'none'};"
-    ></div>
-    <div
-      bind:this={previewEl}
-      class="flex-1 min-w-0 overflow-y-auto markdown-preview"
-      class:hidden={viewMode === "edit"}
-      class:half-width={viewMode === "split"}
-    ></div>
-  </div>
+  <div
+    bind:this={editorContainer}
+    class="flex-1 min-h-0 overflow-hidden"
+  ></div>
 </div>
 
 <style>
@@ -262,27 +169,6 @@
     --mode-btn-bg: transparent;
     --mode-btn-active-bg: var(--bg-btn-primary);
     --mode-btn-active-text: var(--text-btn-primary);
-  }
-
-  .mode-btn {
-    padding: 2px 10px;
-    font-size: 12px;
-    border: none;
-    background: var(--mode-btn-bg);
-    color: var(--mode-btn-text);
-    cursor: pointer;
-    border-right: 1px solid var(--border-color);
-    font-weight: 500;
-  }
-  .mode-btn:last-child {
-    border-right: none;
-  }
-  .mode-btn.active {
-    background: var(--bg-btn-primary);
-    color: var(--text-btn-primary);
-  }
-  .mode-btn:hover:not(.active) {
-    background: var(--bg-note-hover);
   }
 
   .toolbar-btn {
@@ -301,90 +187,4 @@
   .toolbar-btn:hover {
     background: var(--toolbar-btn-hover-bg);
   }
-
-  .half-width {
-    width: 50%;
-  }
-
-  .hidden {
-    display: none !important;
-  }
-
-  /* Preview styles */
-  .markdown-preview {
-    padding: 12px 16px;
-    color: var(--text-primary);
-    line-height: 1.7;
-    font-size: 15px;
-  }
-
-  .markdown-preview :global(h1) { font-size: 1.5rem; font-weight: 700; margin: 1em 0 0.5em; }
-  .markdown-preview :global(h2) { font-size: 1.25rem; font-weight: 600; margin: 1em 0 0.5em; }
-  .markdown-preview :global(h3) { font-size: 1.1rem; font-weight: 600; margin: 1em 0 0.5em; }
-  .markdown-preview :global(p) { margin: 0.5em 0; }
-  .markdown-preview :global(a) { color: var(--editor-link-color); }
-  .markdown-preview :global(blockquote) {
-    border-left: 4px solid var(--editor-blockquote-border);
-    background: var(--editor-blockquote-bg);
-    border-radius: 0 8px 8px 0;
-    padding: 8px 16px;
-    margin: 1em 0;
-    color: var(--editor-blockquote-color);
-  }
-  .markdown-preview :global(blockquote p) { margin: 0.25em 0; }
-  .markdown-preview :global(pre) {
-    background: var(--editor-code-bg);
-    border-radius: 6px;
-    padding: 12px 16px;
-    overflow-x: auto;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-  .markdown-preview :global(code) {
-    background: var(--editor-inline-code-bg);
-    border-radius: 3px;
-    padding: 2px 5px;
-    font-size: 0.875em;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  }
-  .markdown-preview :global(pre code) {
-    background: none;
-    padding: 0;
-    font-size: inherit;
-  }
-  .markdown-preview :global(hr) {
-    border: none;
-    border-top: 1px solid var(--editor-hr-color);
-    margin: 1.5em 0;
-  }
-  .markdown-preview :global(ul) {
-    list-style: disc;
-    padding-left: 1.5em;
-    margin: 0.5em 0;
-  }
-  .markdown-preview :global(ol) {
-    list-style: decimal;
-    padding-left: 1.5em;
-    margin: 0.5em 0;
-  }
-  .markdown-preview :global(li) {
-    margin: 0.25em 0;
-  }
-  .markdown-preview :global(li > p) {
-    margin: 0;
-  }
-  .markdown-preview :global(table) {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1em 0;
-  }
-  .markdown-preview :global(th), .markdown-preview :global(td) {
-    border: 1px solid var(--border-color);
-    padding: 6px 12px;
-    text-align: left;
-  }
-  .markdown-preview :global(th) { background: var(--bg-note-hover); font-weight: 600; }
-  .markdown-preview :global(img) { max-width: 100%; border-radius: 4px; }
-  .markdown-preview :global(.katex-display) { margin: 1em 0; overflow-x: auto; }
-  .markdown-preview :global(input[type="checkbox"]) { margin-right: 6px; }
 </style>

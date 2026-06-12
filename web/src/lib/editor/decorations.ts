@@ -70,6 +70,38 @@ class BulletWidget extends WidgetType {
 
 const BULLET_WIDGET = new BulletWidget();
 
+// ── Image widget ──
+
+class ImageWidget extends WidgetType {
+  constructor(readonly url: string, readonly alt: string) {
+    super();
+  }
+
+  eq(other: ImageWidget): boolean {
+    return this.url === other.url && this.alt === other.alt;
+  }
+
+  toDOM(): HTMLElement {
+    const wrapper = document.createElement("span");
+    wrapper.className = "cm-lp-image-wrapper";
+    const img = document.createElement("img");
+    img.src = this.url;
+    img.alt = this.alt;
+    img.className = "cm-lp-image";
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "400px";
+    img.style.borderRadius = "6px";
+    img.style.display = "block";
+    img.style.margin = "4px 0";
+    wrapper.appendChild(img);
+    return wrapper;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
 class TaskCheckboxWidget extends WidgetType {
   constructor(readonly checked: boolean) {
     super();
@@ -224,11 +256,19 @@ function buildDecorations(view: EditorView): DecorationSet {
         }
       }
 
-      // ── Image — hide raw `![alt](url)` on inactive lines ──
+      // ── Image — render inline on inactive lines ──
       if (name === "Image" && nFrom < nTo) {
         const lineNum = doc.lineAt(nFrom).number;
         if (!activeLines.has(lineNum)) {
-          pushReplace(ranges, doc, nFrom, nTo);
+          const urlChild = node.node.getChild("URL");
+          const url = urlChild ? doc.sliceString(urlChild.from, urlChild.to) : "";
+          if (url) {
+            pushReplace(ranges, doc, nFrom, nTo, {
+              widget: new ImageWidget(url, ""),
+            });
+          } else {
+            pushReplace(ranges, doc, nFrom, nTo);
+          }
         }
       }
 
