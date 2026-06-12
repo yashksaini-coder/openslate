@@ -125,6 +125,7 @@ class TableWidget extends WidgetType {
   }
 }
 
+
 class TaskCheckboxWidget extends WidgetType {
   constructor(readonly checked: boolean) {
     super();
@@ -243,6 +244,7 @@ function escapeHtml(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
 
 // ── Core decoration builder ──
 

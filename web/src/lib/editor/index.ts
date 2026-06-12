@@ -45,6 +45,7 @@ import { editorTheme } from "./theme";
 import { createUploadExtension } from "./upload";
 import { livePreviewPlugin } from "./decorations";
 import { openslateSyntaxHighlighting } from "./syntax";
+import { slashCommands } from "./slash";
 
 export interface EditorExtensionsOptions {
   onFileUpload: (file: File, view: EditorView) => void;
@@ -164,6 +165,7 @@ export function createEditorExtensions(options: EditorExtensionsOptions) {
     }),
     linkPointerGuard,
     linkClickHandler,
+    slashCommands(),
     livePreviewPlugin,
   ];
 }
