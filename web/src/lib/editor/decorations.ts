@@ -277,14 +277,15 @@ function scanTags(
 
 // ── Core decoration builder ──
 
-function buildDecorations(view: EditorView): DecorationSet {
+function buildDecorations(view: EditorView, isPaste = false): DecorationSet {
   const { state } = view;
   const { doc } = state;
   const ranges: Range<Decoration>[] = [];
 
   // Active lines = lines containing cursor or selection
+  // Skip on paste so the entire pasted content renders as live preview
   const activeLines = new Set<number>();
-  if (view.hasFocus) {
+  if (view.hasFocus && !isPaste) {
     for (const r of state.selection.ranges) {
       const first = doc.lineAt(r.from).number;
       const last = doc.lineAt(r.to).number;
@@ -494,7 +495,8 @@ export const livePreviewPlugin = ViewPlugin.fromClass(
         update.selectionSet ||
         update.focusChanged
       ) {
-        this.decorations = buildDecorations(update.view);
+        const isPaste = update.transactions.some((tr) => tr.isUserEvent("input.paste"));
+        this.decorations = buildDecorations(update.view, isPaste);
       }
     }
   },
