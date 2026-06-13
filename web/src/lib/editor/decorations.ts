@@ -245,6 +245,35 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
+// ── Tag scanner ──
+
+const TAG_RE = /(?:^|\s)#([\w-]+)/g;
+
+function scanTags(
+  ranges: Range<Decoration>[],
+  doc: Text,
+  activeLines: Set<number>,
+) {
+  const text = doc.toString();
+  for (const m of text.matchAll(TAG_RE)) {
+    const hashPos = m.index! + m[0].indexOf("#");
+    const tagStart = hashPos + 1;
+    const tagEnd = tagStart + m[1].length;
+    const lineNum = doc.lineAt(hashPos).number;
+    const isActive = activeLines.has(lineNum);
+
+    // Don't decorate if it's a heading marker (# at very start of line)
+    const line = doc.lineAt(hashPos);
+    if (line.from === hashPos) continue;
+
+    if (!isActive) {
+      pushReplace(ranges, doc, hashPos, tagStart); // hide #
+    }
+    ranges.push(
+      Decoration.mark({ class: "cm-lp-tag" }).range(hashPos, tagEnd),
+    );
+  }
+}
 
 // ── Core decoration builder ──
 
@@ -442,6 +471,9 @@ function buildDecorations(view: EditorView): DecorationSet {
       }
     },
   });
+
+  // ── Tags (#tagname) ──
+  scanTags(ranges, doc, activeLines);
 
   return Decoration.set(ranges, true);
 }

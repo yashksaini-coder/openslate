@@ -243,6 +243,7 @@
       editTitle = note.title;
       editContent = note.content;
       editTags = note.tags.join(", ");
+      syncTagsField(note.content);
       savedTitle = note.title;
       savedContent = note.content;
       savedTags = note.tags.join(", ");
@@ -306,12 +307,36 @@
     await loadNotes();
   }
 
-  async function save() {
-    if (!selected && !creating) return;
-    const tags = editTags
+  function extractTagsFromContent(md: string): string[] {
+    return [...md.matchAll(/(?:^|\s)#([\w-]+)/g)]
+      .map((m) => m[1].toLowerCase())
+      .filter((t) => !/^\d/.test(t));
+  }
+
+  function mergeTags(): string[] {
+    const manual = editTags
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+    const fromContent = extractTagsFromContent(editContent);
+    return [...new Set([...manual, ...fromContent])];
+  }
+
+  function syncTagsField(md: string) {
+    const autoTags = extractTagsFromContent(md);
+    // Preserve manual tags that don't appear in content
+    const manualOnly = editTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .filter((t) => !autoTags.includes(t.toLowerCase()));
+    const merged = [...new Set([...autoTags, ...manualOnly])];
+    editTags = merged.join(", ");
+  }
+
+  async function save() {
+    if (!selected && !creating) return;
+    const tags = mergeTags();
 
     if (creating) {
       const res = await api("/api/notes", {
@@ -542,7 +567,7 @@
           noteId={selected?.id ?? ""}
           insertMediaMd={mediaToInsertMd}
           insertMediaKey={mediaInsertKey}
-          onContentChange={(md) => { editContent = md; markDirty(); }}
+          onContentChange={(md) => { editContent = md; syncTagsField(md); markDirty(); }}
           onOpenMediaPicker={openMediaPicker}
           onUploadComplete={() => { if (selected?.id) loadNoteMedia(selected.id); }}
         />

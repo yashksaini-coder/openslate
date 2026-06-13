@@ -548,6 +548,17 @@ body {
 
 .border-theme { border-color: var(--border-color); }
 
+/* ── Tags ── */
+
+.cm-lp-tag {
+  color: var(--text-link) !important;
+  background: var(--bg-tag);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-weight: 500;
+  font-size: 0.93em;
+}
+
 /* ===== Slash Command Autocomplete ===== */
 
 .cm-tooltip.cm-tooltip-autocomplete {
