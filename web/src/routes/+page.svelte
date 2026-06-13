@@ -9,7 +9,7 @@
   import MediaPicker from "$lib/components/MediaPicker.svelte";
   import CommandPalette from "$lib/components/CommandPalette.svelte";
   import SettingsModal from "$lib/components/SettingsModal.svelte";
-  import { PanelLeftOpen, PanelLeftClose, Settings } from "@lucide/svelte";
+  import { PanelLeftOpen, PanelLeftClose, Settings, LogOut } from "@lucide/svelte";
   import * as prefs from "$lib/preferences.svelte";
 
   type NoteSummary = {
@@ -554,6 +554,27 @@
         <button onclick={handleLogout} class="text-xs cursor-pointer hover:opacity-80" style="color: var(--text-danger);">Log out</button>
       </div>
     </div>
+    {/if}
+
+    {#if sidebarCollapsed}
+      <div class="mt-auto p-2 border-t flex flex-col items-center gap-3" style="border-color: var(--border-color);">
+        <button
+          onclick={() => settingsOpen = true}
+          class="cursor-pointer hover:opacity-80 p-1"
+          style="color: var(--text-secondary);"
+          title="Settings"
+        >
+          <Settings size={16} />
+        </button>
+        <button
+          onclick={handleLogout}
+          class="cursor-pointer hover:opacity-80 p-1"
+          style="color: var(--text-danger);"
+          title="Log out"
+        >
+          <LogOut size={16} />
+        </button>
+      </div>
     {/if}
   </aside>
 
