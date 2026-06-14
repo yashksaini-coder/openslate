@@ -44,6 +44,7 @@
   let ctxMenuNote = $state<NoteSummary | null>(null);
   let renamingSlug = $state<string | null>(null);
   let renameValue = $state("");
+  let tabCtxMenu = $state<{ x: number; y: number; paneId: string; tabId: string } | null>(null);
 
   let searchQuery = $state("");
   let searchResults = $state<SearchResult[]>([]);
@@ -467,6 +468,7 @@
         if (cmdPaletteOpen) { cmdPaletteOpen = false; return; }
         if (searchQuery) { clearSearch(); return; }
         closeCtxMenu();
+        closeTabCtxMenu();
         if (renamingSlug) { renamingSlug = null; renameValue = ""; }
       }
     }
@@ -498,6 +500,42 @@
   function closeCtxMenu() {
     ctxMenu = null;
     ctxMenuNote = null;
+  }
+
+  function handleTabContextMenu(paneId: string, tabId: string, e: MouseEvent) {
+    e.preventDefault(); e.stopPropagation();
+    tabCtxMenu = { x: e.clientX, y: e.clientY, paneId, tabId };
+  }
+
+  function closeTabCtxMenu() {
+    tabCtxMenu = null;
+  }
+
+  async function closeAllTabsInPane(paneId: string) {
+    const pane = panes[paneId];
+    if (!pane) return;
+    for (const tab of pane.tabs) {
+      if (tab.dirty) await savePaneTab(paneId, tab);
+    }
+    pane.tabs = [];
+    pane.activeTabId = null;
+    pane.noteMedia = [];
+    closeTabCtxMenu();
+  }
+
+  async function closeOtherTabsInPane(paneId: string, keepTabId: string) {
+    const pane = panes[paneId];
+    if (!pane) return;
+    const keepTab = pane.tabs.find(t => t.id === keepTabId);
+    if (!keepTab) return;
+    for (const tab of pane.tabs) {
+      if (tab.id !== keepTabId && tab.dirty) await savePaneTab(paneId, tab);
+    }
+    pane.tabs = [keepTab];
+    pane.activeTabId = keepTabId;
+    if (keepTab.noteId) loadPaneNoteMedia(paneId, keepTab.noteId);
+    else pane.noteMedia = [];
+    closeTabCtxMenu();
   }
 
   function handleCtxMenu(e: MouseEvent, note?: NoteSummary) {
@@ -807,6 +845,7 @@
         insertMediaKey={mediaInsertKey}
         onSwitchTab={handlePaneSwitchTab}
         onCloseTab={handlePaneCloseTab}
+        onTabContextMenu={handleTabContextMenu}
         onTabTitleChange={handlePaneTitleChange}
         onTabTagsChange={handlePaneTagsChange}
         onTabContentChange={handlePaneContentChange}
@@ -838,6 +877,28 @@
       <div class="border-t" style="border-color: var(--border-color);"></div>
       <button onclick={() => deleteNote(ctxMenuNote!)} class="ctx-menu-item" style="color: var(--text-danger);">Delete</button>
     {/if}
+  </div>
+{/if}
+
+{#if tabCtxMenu}
+  {@const menu = tabCtxMenu}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <div
+    role="none"
+    class="fixed inset-0 z-40"
+    onclick={closeTabCtxMenu}
+    oncontextmenu={(e) => e.preventDefault()}
+  ></div>
+
+  <div
+    class="fixed z-50 rounded border shadow-lg py-1 min-w-[200px]"
+    style="left: {menu.x}px; top: {menu.y}px; background: var(--bg-sidebar); border-color: var(--border-color);"
+  >
+    <button onclick={() => closeAllTabsInPane(menu.paneId)} class="ctx-menu-item">Close all</button>
+    <button onclick={() => closeOtherTabsInPane(menu.paneId, menu.tabId)} class="ctx-menu-item">Close others</button>
+    <div class="border-t" style="border-color: var(--border-color);"></div>
+    <button onclick={() => { splitFocusedPane("vertical"); closeTabCtxMenu(); }} class="ctx-menu-item">Split right</button>
+    <button onclick={() => { splitFocusedPane("horizontal"); closeTabCtxMenu(); }} class="ctx-menu-item">Split down</button>
   </div>
 {/if}
 

@@ -18,6 +18,7 @@
     insertMediaKey = 0,
     onSwitchTab,
     onCloseTab,
+    onTabContextMenu,
     onTabTitleChange,
     onTabTagsChange,
     onTabContentChange,
@@ -34,6 +35,7 @@
     insertMediaKey?: number;
     onSwitchTab?: (paneId: string, tabId: string) => void;
     onCloseTab?: (paneId: string, tabId: string) => void;
+    onTabContextMenu?: (paneId: string, tabId: string, e: MouseEvent) => void;
     onTabTitleChange?: (paneId: string, title: string) => void;
     onTabTagsChange?: (paneId: string, tags: string) => void;
     onTabContentChange?: (paneId: string, md: string) => void;
@@ -92,6 +94,7 @@
       isFocused={node.id === focusedPaneId}
       onSwitchTab={(tabId) => onSwitchTab?.(node.id, tabId)}
       onCloseTab={(tabId) => onCloseTab?.(node.id, tabId)}
+      onTabContextMenu={(tabId, e) => onTabContextMenu?.(node.id, tabId, e)}
       onTabTitleChange={(t) => onTabTitleChange?.(node.id, t)}
       onTabTagsChange={(t) => onTabTagsChange?.(node.id, t)}
       onTabContentChange={(md) => onTabContentChange?.(node.id, md)}
@@ -118,6 +121,7 @@
         {insertMediaKey}
         {onSwitchTab}
         {onCloseTab}
+        {onTabContextMenu}
         {onTabTitleChange}
         {onTabTagsChange}
         {onTabContentChange}
@@ -145,6 +149,7 @@
         {insertMediaKey}
         {onSwitchTab}
         {onCloseTab}
+        {onTabContextMenu}
         {onTabTitleChange}
         {onTabTagsChange}
         {onTabContentChange}

@@ -34,6 +34,7 @@
     isFocused = true,
     onSwitchTab,
     onCloseTab,
+    onTabContextMenu,
     onTabTitleChange,
     onTabTagsChange,
     onTabContentChange,
@@ -50,6 +51,7 @@
     isFocused?: boolean;
     onSwitchTab?: (tabId: string) => void;
     onCloseTab?: (tabId: string) => void;
+    onTabContextMenu?: (tabId: string, e: MouseEvent) => void;
     onTabTitleChange?: (title: string) => void;
     onTabTagsChange?: (tags: string) => void;
     onTabContentChange?: (md: string) => void;
@@ -73,6 +75,7 @@
           class:active={tab.id === activeTabId}
           onclick={() => onSwitchTab?.(tab.id)}
           onmousedown={(e) => { if (e.button === 1) { e.preventDefault(); onCloseTab?.(tab.id); } }}
+          oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); onTabContextMenu?.(tab.id, e); }}
           title={tab.title || "Untitled"}
         >
           {#if tab.dirty}
