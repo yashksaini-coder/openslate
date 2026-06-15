@@ -150,4 +150,9 @@ mod tests {
         let results = search_notes(State(db), Query(params)).await.unwrap();
         assert!(results.is_empty());
     }
+
+    #[test]
+    fn test_fts_short_word() {
+        assert_eq!(build_fts_query("hi"), "hi");
+    }
 }
