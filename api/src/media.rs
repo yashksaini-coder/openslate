@@ -620,4 +620,17 @@ mod tests {
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].mime_type, "image/png");
     }
+
+    #[tokio::test]
+    async fn test_get_media_not_found() {
+        let db = setup_media_db().await;
+        let state = crate::AppState {
+            db,
+            client: None,
+            bucket: None,
+        };
+
+        let result = get_media(State(state), Path("nonexistent".into())).await;
+        assert_eq!(result.err().unwrap(), StatusCode::NOT_FOUND);
+    }
 }
