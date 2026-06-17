@@ -539,7 +539,6 @@ pub async fn import_from_url(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::extract::{Query, State};
 
     #[tokio::test]
     async fn test_list_media_empty() {
@@ -549,17 +548,23 @@ mod tests {
             .await
             .unwrap();
         sqlx::migrate!("./migrations").run(&db).await.unwrap();
-        let state = crate::AppState { db, client: None, bucket: None };
+        let state = crate::AppState {
+            db,
+            client: None,
+            bucket: None,
+        };
 
-        let Json(items) = list_media(State(state), Query(ListMediaParams {
-            r#type: None,
-            note_id: None,
-            q: None,
-            _tags: None,
-        }))
+        let Json(items) = list_media(
+            State(state),
+            Query(ListMediaParams {
+                r#type: None,
+                note_id: None,
+                q: None,
+                _tags: None,
+            }),
+        )
         .await
         .unwrap();
         assert!(items.is_empty());
     }
 }
-
