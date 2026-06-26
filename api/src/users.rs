@@ -187,4 +187,13 @@ mod tests {
         let Json(json) = status(State(state)).await;
         assert_eq!(json["has_users"], true);
     }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_status_empty_db() {
+        let db = setup_db().await;
+        let state = app_state(db);
+        let Json(json) = status(State(state)).await;
+        assert_eq!(json["has_users"], false);
+    }
 }
