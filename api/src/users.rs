@@ -189,7 +189,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial]
     async fn test_status_empty_db() {
         let db = setup_db().await;
         let state = app_state(db);
