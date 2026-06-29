@@ -194,5 +194,29 @@ mod tests {
         let state = app_state(db);
         let Json(json) = status(State(state)).await;
         assert_eq!(json["has_users"], false);
+      
+    #[serial]
+    async fn test_signup_conflict() {
+        let db = setup_db().await;
+        let state = app_state(db.clone());
+        let jar = CookieJar::new();
+
+        let body1 = Json(AuthBody {
+            password: "pass1".into(),
+        });
+
+        let body2 = Json(AuthBody {
+            password: "pass2".into(),
+        });
+
+        let (res1, res2) =
+            temp_env::async_with_vars([("JWT_SECRET", Some("test_secret"))], async {
+                let r1 = signup(jar.clone(), State(state.clone()), body1).await;
+                let r2 = signup(jar.clone(), State(state.clone()), body2).await;
+                (r1, r2)
+            })
+            .await;
+        assert!(res1.is_ok());
+        assert_eq!(res2.unwrap_err(), StatusCode::CONFLICT);
     }
 }

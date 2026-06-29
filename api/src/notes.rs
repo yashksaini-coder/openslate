@@ -825,3 +825,23 @@ fn build_zip_response(
 
     Ok(response)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::extract::{Path, State};
+    use sqlx::SqlitePool;
+
+    async fn setup_db() -> SqlitePool {
+        let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_get_note_not_found() {
+        let db = setup_db().await;
+        let result = get_note(State(db), Path("nope".into())).await;
+        assert!(matches!(result, Err(StatusCode::NOT_FOUND)));
+    }
+}
