@@ -131,14 +131,11 @@ pub async fn change_password(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::AppState;
-    use axum::extract::State;
-    use serial_test::serial;
+pub(crate) mod test_utils {
+    use sqlx::SqlitePool;
     use sqlx::sqlite::SqlitePoolOptions;
 
-    async fn setup_db() -> SqlitePool {
+    pub(crate) async fn setup_db() -> SqlitePool {
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
             .connect("sqlite::memory:")
@@ -161,13 +158,21 @@ mod tests {
         pool
     }
 
-    fn app_state(db: SqlitePool) -> AppState {
-        AppState {
+    pub(crate) fn app_state(db: SqlitePool) -> crate::AppState {
+        crate::AppState {
             db,
             client: None,
             bucket: None,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::test_utils::*;
+    use axum::extract::State;
+    use serial_test::serial;
 
     #[tokio::test]
     #[serial]
