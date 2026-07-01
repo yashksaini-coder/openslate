@@ -71,6 +71,26 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    async fn test_auth_middleware_no_cookie() {
+        let app = Router::new()
+            .route("/", get(|| async { "ok" }))
+            .layer(middleware::from_fn(auth_middleware));
+
+        let res = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .uri("/")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn test_auth_middleware_invalid_token() {
         let app = Router::new()
             .route("/", get(|| async { "ok" }))
