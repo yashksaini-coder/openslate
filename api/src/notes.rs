@@ -844,4 +844,69 @@ mod tests {
         let result = get_note(State(db), Path("nope".into())).await;
         assert!(matches!(result, Err(StatusCode::NOT_FOUND)));
     }
+
+    #[test]
+    // Verifies whether slugify title sanitization
+    fn test_slugify_basic() {
+        assert_eq!(slugify("Hello World"), "hello-world");
+        assert_eq!(slugify(""), "untitled");
+        assert_eq!(slugify("dooms day"), "dooms-day");
+        assert_eq!(slugify("Ice cream"), "ice-cream");
+        assert_eq!(slugify("donkey Kong"), "donkey-kong");
+    }
+
+    #[test]
+    // Verifies whitespace trimming of slugify.
+    fn test_slugify_whitespace() {
+        assert_eq!(slugify(" Hello "), "hello");
+        assert_eq!(slugify(""), "untitled");
+        assert_eq!(slugify("     dooms day     "), "dooms-day");
+        assert_eq!(slugify("      Ice cream"), "ice-cream");
+        assert_eq!(slugify("donkey Kong      "), "donkey-kong");
+    }
+
+    #[test]
+    // Verifies special character replacment with '-'
+    fn test_slugify_special_chars() {
+        assert_eq!(slugify(" Hello world! "), "hello-world");
+        assert_eq!(slugify("@hello@world"), "hello-world");
+        assert_eq!(slugify("!dooms !day     "), "dooms--day");
+        assert_eq!(slugify("Ice!: cream!:"), "ice--cream");
+        assert_eq!(slugify("donkey:: Kong!"), "donkey--kong");
+        assert_eq!(slugify("slack% knack^"), "slack--knack");
+        assert_eq!(slugify("Fruit& ninja(^      "), "fruit--ninja");
+        assert_eq!(slugify("Fruit& ninja)^      "), "fruit--ninja");
+        assert_eq!(slugify("!@#$%^&*()^      "), "untitled");
+    }
+
+    #[test]
+    // Verifies the numbers in sections, chapters
+    fn test_slugify_numbers() {
+        assert_eq!(slugify("Section 2.1"), "section-2-1");
+        assert_eq!(slugify("Section 2.1.1"), "section-2-1-1");
+        assert_eq!(slugify("Chapter @2.1.1"), "chapter--2-1-1");
+        assert_eq!(slugify("1.3.1.5.2.8"), "1-3-1-5-2-8");
+        assert_eq!(slugify(".1.5.1.0.1.8"), "1-5-1-0-1-8");
+    }
+
+    #[test]
+    // Verifies the underscores in sections, chapters
+    fn test_slugify_underscores() {
+        assert_eq!(slugify("my_note"), "my-note");
+        assert_eq!(slugify("_start_of_summer"), "start-of-summer");
+        assert_eq!(slugify("end_of_winter_"), "end-of-winter");
+        assert_eq!(slugify("_"), "untitled");
+        assert_eq!(slugify("1_1"), "1-1");
+        assert_eq!(slugify("_@"), "untitled");
+        assert_eq!(slugify("!!!_"), "untitled");
+    }
+
+    // Verifies the valid title
+    #[test]
+    fn test_slugify_already_valid() {
+        assert_eq!(slugify("my-note-slug"), "my-note-slug");
+        assert_eq!(slugify("eat-sleep"), "eat-sleep");
+        assert_eq!(slugify("debug-1-2"), "debug-1-2");
+        assert_eq!(slugify("1-3-i-made-stop"), "1-3-i-made-stop");
+    }
 }

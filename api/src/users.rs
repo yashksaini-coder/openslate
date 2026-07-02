@@ -194,6 +194,12 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_status_empty_db() {
+        let db = setup_db().await;
+        let state = app_state(db);
+        let Json(json) = status(State(state)).await;
+        assert_eq!(json["has_users"], false);
+    }
     #[serial]
     async fn test_signup_conflict() {
         let db = setup_db().await;
@@ -217,5 +223,21 @@ mod tests {
             .await;
         assert!(res1.is_ok());
         assert_eq!(res2.unwrap_err(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_signin_no_users() {
+        let db = setup_db().await;
+        let state = app_state(db);
+        let jar = CookieJar::new();
+
+        let body = Json(AuthBody {
+            password: "anything".into(),
+        });
+
+        let result = signin(jar, State(state.clone()), body).await;
+
+        assert_eq!(result.unwrap_err(), StatusCode::UNAUTHORIZED);
     }
 }
