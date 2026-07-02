@@ -169,8 +169,8 @@ pub(crate) mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::test_utils::*;
+    use super::*;
     use axum::extract::State;
     use serial_test::serial;
 

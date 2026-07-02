@@ -55,6 +55,8 @@ pub async fn me() -> Json<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::users::test_utils::{app_state, setup_db};
+    use crate::users::{AuthBody, signup, user_count};
     use axum::body::Body;
     use axum::extract::State;
     use axum::{Router, middleware, routing::get};
@@ -62,8 +64,6 @@ mod tests {
     use serial_test::serial;
     use time::{Duration, OffsetDateTime};
     use tower::ServiceExt;
-    use crate::users::test_utils::{setup_db, app_state};
-    use crate::users::{signup, user_count, AuthBody};
 
     #[tokio::test]
     #[serial]
