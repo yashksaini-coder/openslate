@@ -55,7 +55,10 @@ pub async fn me() -> Json<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::users::test_utils::{app_state, setup_db};
+    use crate::users::{AuthBody, signup, user_count};
     use axum::body::Body;
+    use axum::extract::State;
     use axum::{Router, middleware, routing::get};
     use jsonwebtoken::{EncodingKey, Header, encode};
     use serial_test::serial;
@@ -146,5 +149,26 @@ mod tests {
         .await;
 
         assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_signup_create_users() {
+        temp_env::async_with_vars([("JWT_SECRET", Some("test_secret"))], async {
+            let db = setup_db().await;
+            let state = app_state(db.clone());
+            let jar = CookieJar::new();
+            let body = Json(AuthBody {
+                password: "secret".into(),
+            });
+
+            let result = signup(jar, State(state), body).await;
+            assert!(result.is_ok());
+
+            let (jar, _) = result.unwrap();
+            assert!(jar.get("token").is_some());
+            assert_eq!(user_count(&db).await, 1);
+        })
+        .await;
     }
 }
