@@ -633,7 +633,11 @@
     ctxMenuNote = note ?? null;
   }
 
-  function focusSearch() { searchInputEl?.focus(); }
+  function focusSearch() {
+    sidebarCollapsed = false;
+    sidebarTab = "notes";
+    requestAnimationFrame(() => searchInputEl?.focus());
+  }
 
   async function loadNotes() {
     loading = true;
