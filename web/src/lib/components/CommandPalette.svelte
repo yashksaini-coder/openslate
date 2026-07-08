@@ -144,12 +144,6 @@
                   {cmd.shortcut}
                 </span>
 {/if}
-
-<style>
-  button:hover:not(.bg-note-active) {
-    background: var(--bg-note-hover);
-  }
-</style>
             </button>
           {/each}
         {/if}
@@ -162,3 +156,12 @@
     </div>
   </div>
 {/if}
+
+
+
+<style>
+  button:hover:not(.bg-note-active) {
+    background: var(--bg-note-hover);
+  }
+</style>
+ 
